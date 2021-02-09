@@ -1,11 +1,12 @@
 import discord
 from config import DISCORD_API_TOKEN
-from discord.ext import commands
+from discord.ext import commands as discCommands
 import sqlite3
-from commands import events, servers
+import commands
 from waitloop import waitloop
+from eventNotifier import eventNotifier
 
-bot = commands.Bot(command_prefix='^')
+bot = discCommands.Bot(command_prefix='^')
 conn = sqlite3.connect('schedulerData.db')
 cursor = conn.cursor()
 
@@ -15,11 +16,12 @@ cursor.execute(
 cursor.execute(
     'CREATE TABLE IF NOT EXISTS events ("id" INTEGER PRIMARY KEY, "fk_servers" INTEGER, "name" TEXT, "description" TEXT, "game" TEXT, "mentions" TEXT, "time" INTEGER, "channelId" TEXT, "author" TEXT)'
 )
-# ID | NAME | DESCRIPTION | GAME | MENTIONS | TIME
+# ID | FK_SERVERS | NAME | DESCRIPTION | GAME | MENTIONS | TIME | CHANNELID | AUTHORID
 conn.close()
 
 bot.load_extension('commands')
 bot.add_cog(waitloop(bot))
+bot.add_cog(eventNotifier(bot))
 
 
 @bot.event
