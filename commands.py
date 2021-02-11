@@ -60,34 +60,8 @@ def check(author):
             return False
     return inner_check
 
-@commands.command()
-async def schedule(ctx, eventName, desc, game, when, *people):
-    serverId = ctx.guild.id
-    channelId = ctx.channel.id
-    author = ctx.author.id
-    tempTime = int(time.time()) + int(when)  #currently currentTime + X seconds
-    who = ''
-    for user in people:
-        who = who + user + ' '
-    #await client.wait_for('message', timeout=60.0, check=check)
-    statement = f'''INSERT INTO events VALUES (NULL, 
-                                            {serverId}, 
-                                            "{eventName}",
-                                            "{desc}",
-                                            "{game}",
-                                            "{who}",
-                                            "{tempTime}",
-                                            "{channelId}",
-                                            "<@!{author}> ")'''
-    print(statement)
-    cursor.execute(statement)
-    conn.commit()
-    await ctx.send(statement)
-
-
 def setup(bot):
     bot.add_command(events)
     bot.add_command(servers)
     bot.add_command(register)
-    bot.add_command(schedule)
     bot.add_command(test)
