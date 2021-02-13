@@ -28,6 +28,7 @@ async def test(ctx):
     myEmbed = discord.Embed(
         title=Title,
         description=description)
+    myEmbed.colour = discord.Colour.random()
     myEmbed.add_field(name="Time",
                       value=friendlyTime,
                       inline=False)

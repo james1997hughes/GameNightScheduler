@@ -5,6 +5,9 @@ import sqlite3
 import commands
 from waitloop import waitloop
 from scheduler import scheduler
+import logging
+
+logging.basicConfig(level=logging.INFO, format='%(asctime)s %(name)s %(levelname)s:%(message)s')
 
 bot = discCommands.Bot(command_prefix='^')
 conn = sqlite3.connect('schedulerData.db')
