@@ -38,11 +38,8 @@ class waitloop(commands.Cog):
                                             creator=f'{author}',
                                             footerText='Schedule another with ^schedule.')
 
-
-
             deleteStatement = f"DELETE FROM events WHERE id={event[0]}"
             self.cursor.execute(deleteStatement)
             self.conn.commit()
             print(f'Deleted event: {event[2]}')
             await channel.send(embed=eventEmbed)
-

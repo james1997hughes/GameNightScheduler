@@ -6,17 +6,6 @@ import discord
 conn = sqlite3.connect('schedulerData.db')
 cursor = conn.cursor()
 
-
-@commands.command()
-async def events(ctx):
-    print("events")
-    serverId = ctx.guild.id
-    statement = f"SELECT * FROM events WHERE fk_servers = {serverId}"
-    results = cursor.execute(statement).fetchall()
-    print(results)
-    await ctx.send(results)
-
-
 @commands.command()
 async def test(ctx):
     print("test")
@@ -42,15 +31,14 @@ async def test(ctx):
 
 @commands.command()
 async def servers(ctx):
-    statement = "SELECT * FROM servers"
-    await ctx.send(cursor.execute(statement).fetchall())
-
+    statement = "SELECT total_events FROM servers where id = 729002282762633226"
+    await ctx.send(cursor.execute(statement).fetchall().pop()[0])
 
 @commands.command()
 async def register(ctx):
     safeName = ctx.guild.name.replace("\'", "")
     serverId = ctx.guild.id
-    statement = f"INSERT INTO servers VALUES ( {serverId} , '{safeName}')"
+    statement = f"INSERT INTO servers VALUES ( {serverId} , '{safeName}', 0)"
     cursor.execute(statement)
     conn.commit()
     await ctx.send("Server Registered")
@@ -62,7 +50,6 @@ def check(author):
     return inner_check
 
 def setup(bot):
-    bot.add_command(events)
     bot.add_command(servers)
     bot.add_command(register)
     bot.add_command(test)

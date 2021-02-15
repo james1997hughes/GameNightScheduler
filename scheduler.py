@@ -62,9 +62,18 @@ class scheduler(commands.Cog):
             await self.cleanUpMessages()
             return message.content
 
+    async def getEventID(self, serverId):
+        statement = f'SELECT s.total_events FROM servers s WHERE s.id = {serverId}'
+
+        totalEvents = int(self.cursor.execute(statement).fetchall().pop()[0])
+        return totalEvents + 1
+
     async def saveEvent(self, serverId, eventName, desc, game, mentions,
                         unixTime, channelId, author):
-        statement = f'''INSERT INTO events VALUES (NULL, 
+
+        eventId = await self.getEventID(serverId)
+        statement = f'''INSERT INTO events VALUES (NULL,
+                                                {eventId}, 
                                                 {serverId}, 
                                                 "{eventName}",
                                                 "{desc}",
@@ -73,7 +82,9 @@ class scheduler(commands.Cog):
                                                 "{unixTime}",
                                                 "{channelId}",
                                                 "<@!{author}>")'''
+        totalUpdStmt = f'''UPDATE servers SET total_events = {eventId} WHERE id = {serverId}'''
         self.cursor.execute(statement)
+        self.cursor.execute(totalUpdStmt)
         self.conn.commit()
 
     async def cleanUpMessages(self):
@@ -118,11 +129,11 @@ class scheduler(commands.Cog):
                 mentions=mentions,
                 creator=f'{author}',
                 footerText='Schedule another with ^schedule'))
-            self.messagesStack.append(eventPreview)
+            #self.messagesStack.append(eventPreview)
+            #don't delete preview for now
 
             
             confirmed = await self.confirmEvent(ctx)
-            await self.cleanUpMessages()
             if confirmed:
                 await self.saveEvent(serverId=serverId,
                                     eventName=eventName,
@@ -132,8 +143,10 @@ class scheduler(commands.Cog):
                                     unixTime=timeUnix,
                                     channelId=channelId,
                                     author=author)
+                await self.cleanUpMessages()
                 await ctx.send('Event scheduled')
             else:
+                await self.cleanUpMessages()
                 await ctx.send('Event cancelled.')
 
         except:
