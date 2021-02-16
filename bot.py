@@ -15,10 +15,13 @@ conn = sqlite3.connect('schedulerData.db')
 cursor = conn.cursor()
 
 cursor.execute(
-    '''CREATE TABLE if not exists servers (id INTEGER PRIMARY KEY, name TEXT, total_events INTEGER)'''
+    '''CREATE TABLE if not exists servers (id INTEGER PRIMARY KEY, server_id TEXT, name TEXT, total_events INTEGER)'''
 )
 cursor.execute(
-    'CREATE TABLE IF NOT EXISTS events ("id" INTEGER PRIMARY KEY, "event_id" INTEGER, "fk_servers" INTEGER, "name" TEXT, "description" TEXT, "game" TEXT, "mentions" TEXT, "time" INTEGER, "channel_id" TEXT, "author" TEXT)'
+    'CREATE TABLE IF NOT EXISTS events ("id" INTEGER PRIMARY KEY, "event_id" INTEGER, "fk_servers" INTEGER, "name" TEXT, "description" TEXT, "game" TEXT, "time" INTEGER, "channel_id" TEXT, "author" INTEGER)'
+)
+cursor.execute(
+    'CREATE TABLE IF NOT EXISTS events_users ("id" INTEGER PRIMARY KEY, fk_events INTEGER, fk_servers INTEGER, userId INTEGER, userName TEXT)'
 )
 # ID | FK_SERVERS | NAME | DESCRIPTION | GAME | MENTIONS | TIME | CHANNELID | AUTHORID
 

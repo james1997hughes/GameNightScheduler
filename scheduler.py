@@ -62,29 +62,47 @@ class scheduler(commands.Cog):
             await self.cleanUpMessages()
             return message.content
 
-    async def getEventID(self, serverId):
-        statement = f'SELECT s.total_events FROM servers s WHERE s.id = {serverId}'
+    async def getServerInfo(self, serverId):
+        statement = f'SELECT s.id, s.total_events FROM servers s WHERE s.server_id = {serverId}'
+        row = self.cursor.execute(statement).fetchall().pop()
+        totalEvents = int(row[1])
+        id = int(row[0])
+        return [id, totalEvents + 1]
 
-        totalEvents = int(self.cursor.execute(statement).fetchall().pop()[0])
-        return totalEvents + 1
+    async def saveEvent(self, serverId, eventName, desc, game,
+                        unixTime, channelId, author, ctx):
 
-    async def saveEvent(self, serverId, eventName, desc, game, mentions,
-                        unixTime, channelId, author):
-
-        eventId = await self.getEventID(serverId)
+        serverInfo = await self.getServerInfo(serverId)
         statement = f'''INSERT INTO events VALUES (NULL,
-                                                {eventId}, 
-                                                {serverId}, 
+                                                {serverInfo[1]}, 
+                                                {serverInfo[0]}, 
                                                 "{eventName}",
                                                 "{desc}",
                                                 "{game}",
-                                                "{mentions}",
-                                                "{unixTime}",
+                                                {unixTime},
                                                 "{channelId}",
-                                                "<@!{author}>")'''
-        totalUpdStmt = f'''UPDATE servers SET total_events = {eventId} WHERE id = {serverId}'''
+                                                {author});'''
+        totalUpdStmt = f'''UPDATE servers SET total_events = {serverInfo[1]} WHERE id = {serverInfo[0]}'''
         self.cursor.execute(statement)
         self.cursor.execute(totalUpdStmt)
+        self.conn.commit()
+        getEventId = f'''SELECT id FROM events WHERE event_id = {serverInfo[1]} AND fk_servers = {serverInfo[0]}'''
+        logging.info(getEventId)
+        eventId = self.cursor.execute(getEventId).fetchall().pop()[0]
+        logging.info(f"Event ID: {eventId}")
+        addOwnerToEvent = f'''INSERT INTO events_users 
+                                            (id,
+                                            fk_events, 
+                                            fk_servers,
+                                            userId, 
+                                            userName)
+                                     VALUES (NULL, 
+                                            {eventId}, 
+                                            {serverInfo[0]},
+                                            {author}, 
+                                            '{str(ctx.author)}')'''
+        logging.info(addOwnerToEvent)
+        self.cursor.execute(addOwnerToEvent)
         self.conn.commit()
 
     async def cleanUpMessages(self):
@@ -112,8 +130,6 @@ class scheduler(commands.Cog):
             eventName = await self.askForInput(ctx, ctx.author, "Event Name?")
             desc = await self.askForInput(ctx, ctx.author, "Description?")
             game = await self.askForInput(ctx, ctx.author, "What game/activity?")
-            mentions = await self.askForInput(
-                ctx, ctx.author, "Who do you want to notify? @ mention them here")
             time = await self.askForInput(ctx, ctx.author, "When is the event?")
 
             try:  #need to implement retry for time
@@ -126,12 +142,14 @@ class scheduler(commands.Cog):
                 desc=desc,
                 game=game,
                 unixTime=timeUnix,
-                mentions=mentions,
                 creator=f'{author}',
-                footerText='Schedule another with ^schedule'))
+                footerText='Schedule another with ^schedule',
+                eventId=0,
+                serverId=0,
+                preview=True,
+                mention=False))
             #self.messagesStack.append(eventPreview)
             #don't delete preview for now
-
             
             confirmed = await self.confirmEvent(ctx)
             if confirmed:
@@ -139,16 +157,17 @@ class scheduler(commands.Cog):
                                     eventName=eventName,
                                     desc=desc,
                                     game=game,
-                                    mentions=mentions,
                                     unixTime=timeUnix,
                                     channelId=channelId,
-                                    author=author)
+                                    author=author, 
+                                    ctx=ctx)
                 await self.cleanUpMessages()
                 await ctx.send('Event scheduled')
             else:
                 await self.cleanUpMessages()
                 await ctx.send('Event cancelled.')
 
-        except:
+        except Exception as e:
+            logging.info(Exception.with_traceback())
             await ctx.send('Scheduling timed out, try again with ^schedule')
             await self.cleanUpMessages()

@@ -3,6 +3,7 @@ from discord.ext import tasks, commands
 import sqlite3
 import time
 from embedFactory import embedFactory
+from events import eventObj
 
 
 class waitloop(commands.Cog):
@@ -22,21 +23,9 @@ class waitloop(commands.Cog):
         for event in events:
             await self.bot.wait_until_ready()
             channel = self.bot.get_channel(int(event[7]))
+            eventToNotify = eventObj(eventRow=event)
 
-            eventName = event[2]
-            game = event[4]
-            unixTime = event[6]
-            desc = event[3]
-            author= event[8]
-            mentions = event[5]
-
-            eventEmbed=embedFactory(eventName=eventName,
-                                            desc=desc,
-                                            game=game,
-                                            unixTime=unixTime,
-                                            mentions=mentions,
-                                            creator=f'{author}',
-                                            footerText='Schedule another with ^schedule.')
+            eventEmbed = eventToNotify.toEmbed(preview=False, active=True)
 
             deleteStatement = f"DELETE FROM events WHERE id={event[0]}"
             self.cursor.execute(deleteStatement)

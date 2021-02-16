@@ -3,6 +3,7 @@ from discord.ext import commands
 import sqlite3
 import time
 import discord
+import logging
 conn = sqlite3.connect('schedulerData.db')
 cursor = conn.cursor()
 
@@ -31,17 +32,19 @@ async def test(ctx):
 
 @commands.command()
 async def servers(ctx):
-    statement = "SELECT total_events FROM servers where id = 729002282762633226"
+    statement = "SELECT total_events FROM servers where server_id = 729002282762633226"
     await ctx.send(cursor.execute(statement).fetchall().pop()[0])
 
 @commands.command()
 async def register(ctx):
     safeName = ctx.guild.name.replace("\'", "")
     serverId = ctx.guild.id
-    statement = f"INSERT INTO servers VALUES ( {serverId} , '{safeName}', 0)"
+    statement = f"INSERT INTO servers VALUES (NULL, '{serverId}' , '{safeName}', 0)"
+    logging.info(serverId)
+    logging.info(statement)
     cursor.execute(statement)
     conn.commit()
-    await ctx.send("Server Registered")
+    await ctx.send(str(ctx.guild.id))
 
 def check(author):
     def inner_check(message): 
